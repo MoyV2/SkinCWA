@@ -58,6 +58,7 @@ function getCurrentGridSize(level) {
 
 // Initialize menu
 function initMenu() {
+    gameState = 'menu';
     const grid = document.getElementById('category-grid');
     grid.innerHTML = '';
     
@@ -120,19 +121,61 @@ function generatePuzzle() {
             { word: "LUFFY", clue: "Captain of the Straw Hat Pirates" },
             { word: "ZORO", clue: "Three-sword style swordsman" },
             { word: "NAMI", clue: "Navigator who loves treasure" },
-            { word: "SANJI", clue: "Cook who fights with his legs" }
+            { word: "SANJI", clue: "Cook who fights with his legs" },
+            { word: "CHOPPER", clue: "Reindeer doctor of the crew" },
+            { word: "ROBIN", clue: "Archaeologist with flower powers" }
         ],
         'Dragon Ball Z': [
             { word: "GOKU", clue: "Saiyan protagonist" },
             { word: "VEGETA", clue: "Proud Saiyan prince" },
             { word: "GOHAN", clue: "Goku's eldest son" },
-            { word: "FRIEZA", clue: "Galactic emperor villain" }
+            { word: "FRIEZA", clue: "Galactic emperor villain" },
+            { word: "CELL", clue: "Bio-android created by Dr. Gero" },
+            { word: "BULMA", clue: "Genius inventor and scientist" }
         ],
         'Naruto': [
             { word: "NARUTO", clue: "Dreams of becoming Hokage" },
             { word: "SASUKE", clue: "Last Uchiha clan member" },
             { word: "SAKURA", clue: "Medical ninja with super strength" },
-            { word: "KAKASHI", clue: "Copy ninja sensei" }
+            { word: "KAKASHI", clue: "Copy ninja sensei" },
+            { word: "ITACHI", clue: "Sasuke's older brother" },
+            { word: "HINATA", clue: "Byakugan user from Hyuga clan" }
+        ],
+        'Bleach': [
+            { word: "ICHIGO", clue: "Substitute Soul Reaper" },
+            { word: "RUKIA", clue: "Soul Reaper who gave Ichigo powers" },
+            { word: "URYU", clue: "Quincy archer and classmate" },
+            { word: "ORIHIME", clue: "Healer with rejection powers" }
+        ],
+        'Jujutsu Kaisen': [
+            { word: "YUJI", clue: "Pink-haired protagonist vessel" },
+            { word: "MEGUMI", clue: "Ten Shadows technique user" },
+            { word: "NOBARA", clue: "Hammer and nails technique user" },
+            { word: "GOJO", clue: "Strongest sorcerer with Six Eyes" }
+        ],
+        'Pokemon': [
+            { word: "PIKACHU", clue: "Electric mouse Pokemon" },
+            { word: "CHARIZARD", clue: "Fire/Flying dragon-like Pokemon" },
+            { word: "BLASTOISE", clue: "Water turtle with cannons" },
+            { word: "VENUSAUR", clue: "Grass/Poison Pokemon with flower" }
+        ],
+        'Demon Slayer': [
+            { word: "TANJIRO", clue: "Water breathing demon slayer" },
+            { word: "NEZUKO", clue: "Demon sister in bamboo muzzle" },
+            { word: "ZENITSU", clue: "Thunder breathing yellow-haired slayer" },
+            { word: "INOSUKE", clue: "Beast breathing boar-headed slayer" }
+        ],
+        'My Hero Academia': [
+            { word: "DEKU", clue: "Green-haired One For All user" },
+            { word: "BAKUGO", clue: "Explosion quirk user" },
+            { word: "TODOROKI", clue: "Half-hot half-cold quirk user" },
+            { word: "ALLMIGHT", clue: "Symbol of Peace, former One For All user" }
+        ],
+        'Solo Leveling': [
+            { word: "JINWOO", clue: "Shadow Monarch and weakest hunter" },
+            { word: "IGRIS", clue: "Red shadow knight" },
+            { word: "BERU", clue: "Ant shadow soldier" },
+            { word: "HUNTER", clue: "Person who fights monsters" }
         ]
     };
     
@@ -184,9 +227,7 @@ function createGrid() {
     renderClues();
 }
 
-// Render grid HTML
-// renderGrid function with this mobile-friendly version:
-
+// MOBILE-FRIENDLY Render grid HTML
 function renderGrid() {
     const container = document.getElementById('crossword-container');
     const grid = document.createElement('div');
@@ -211,7 +252,7 @@ function renderGrid() {
                     cellDiv.appendChild(number);
                 }
                 
-                // MOBILE FIX: Add invisible input for mobile keyboards
+                // MOBILE FIX: Add input for mobile keyboards
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.maxLength = 1;
@@ -230,20 +271,19 @@ function renderGrid() {
                     font-weight: bold;
                     color: ${cell.isCorrect ? 'green' : (cell.userInput && !cell.isCorrect ? 'red' : 'black')};
                     z-index: 2;
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    appearance: none;
                 `;
                 
                 // Handle input changes
                 input.addEventListener('input', (e) => {
-                    const value = e.target.value.toUpperCase();
-                    if (value.match(/[A-Z]/)) {
-                        currentGrid[rowIndex][colIndex].userInput = value;
-                        e.target.value = value;
-                        
-                        // Auto-move to next cell
+                    const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                    currentGrid[rowIndex][colIndex].userInput = value;
+                    e.target.value = value;
+                    
+                    if (value) {
                         moveToNextCell(rowIndex, colIndex);
-                    } else {
-                        e.target.value = '';
-                        currentGrid[rowIndex][colIndex].userInput = '';
                     }
                 });
                 
@@ -262,7 +302,7 @@ function renderGrid() {
                 cellDiv.appendChild(input);
                 cellDiv.onclick = () => {
                     selectCell(rowIndex, colIndex);
-                    input.focus(); // Focus input for mobile keyboard
+                    setTimeout(() => input.focus(), 50);
                 };
             }
             
@@ -301,6 +341,46 @@ function selectCell(row, col) {
     renderGrid(); // Re-render to show selection
 }
 
+// Move to next cell
+function moveToNextCell(row, col) {
+    if (!selectedWord) return;
+    
+    let nextRow = row;
+    let nextCol = col;
+    
+    if (selectedWord.direction === 'across') {
+        nextCol++;
+        if (nextCol >= selectedWord.startCol + selectedWord.word.length) return;
+    } else {
+        nextRow++;
+        if (nextRow >= selectedWord.startRow + selectedWord.word.length) return;
+    }
+    
+    if (nextRow < currentGrid.length && nextCol < currentGrid[0].length && !currentGrid[nextRow][nextCol].isBlack) {
+        selectCell(nextRow, nextCol);
+    }
+}
+
+// Move to previous cell
+function moveToPrevCell(row, col) {
+    if (!selectedWord) return;
+    
+    let prevRow = row;
+    let prevCol = col;
+    
+    if (selectedWord.direction === 'across') {
+        prevCol--;
+        if (prevCol < selectedWord.startCol) return;
+    } else {
+        prevRow--;
+        if (prevRow < selectedWord.startRow) return;
+    }
+    
+    if (prevRow >= 0 && prevCol >= 0 && !currentGrid[prevRow][prevCol].isBlack) {
+        selectCell(prevRow, prevCol);
+    }
+}
+
 // Render clues
 function renderClues() {
     const acrossClues = currentPuzzle.words.filter(w => w.direction === 'across');
@@ -309,7 +389,8 @@ function renderClues() {
     document.getElementById('across-clues').innerHTML = acrossClues.map(word => 
         `<div style="padding: 0.5rem; margin-bottom: 0.5rem; cursor: pointer; border-radius: 8px;" 
          onmouseover="this.style.background='#374151'" 
-         onmouseout="this.style.background='transparent'">
+         onmouseout="this.style.background='transparent'"
+         onclick="selectWordFromClue('${word.direction}', ${word.number})">
             <strong>${word.number}.</strong> ${word.clue}
         </div>`
     ).join('');
@@ -317,14 +398,24 @@ function renderClues() {
     document.getElementById('down-clues').innerHTML = downClues.map(word => 
         `<div style="padding: 0.5rem; margin-bottom: 0.5rem; cursor: pointer; border-radius: 8px;"
          onmouseover="this.style.background='#374151'" 
-         onmouseout="this.style.background='transparent'">
+         onmouseout="this.style.background='transparent'"
+         onclick="selectWordFromClue('${word.direction}', ${word.number})">
             <strong>${word.number}.</strong> ${word.clue}
         </div>`
     ).join('');
 }
 
+// Select word from clue click
+function selectWordFromClue(direction, number) {
+    const word = currentPuzzle.words.find(w => w.direction === direction && w.number === number);
+    if (word) {
+        selectCell(word.startRow, word.startCol);
+    }
+}
+
 // Show game screen
 function showGameScreen() {
+    gameState = 'playing';
     document.getElementById('menu-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
     document.getElementById('levelup-screen').classList.add('hidden');
@@ -414,61 +505,7 @@ function backToMenu() {
     initMenu();
 }
 
-// Keyboard input
-document.addEventListener('keydown', (e) => {
-    if (!selectedCell || gameState !== 'playing') return;
-    
-    const { row, col } = selectedCell;
-    
-    if (e.key.match(/^[a-zA-Z]$/)) {
-        currentGrid[row][col].userInput = e.key.toUpperCase();
-        renderGrid();
-    } else if (e.key === 'Backspace') {
-        currentGrid[row][col].userInput = '';
-        renderGrid();
-    }
-});
-
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     initMenu();
 });
-// ADD these new helper functions:
-
-function moveToNextCell(row, col) {
-    if (!selectedWord) return;
-    
-    let nextRow = row;
-    let nextCol = col;
-    
-    if (selectedWord.direction === 'across') {
-        nextCol++;
-        if (nextCol >= selectedWord.startCol + selectedWord.word.length) return;
-    } else {
-        nextRow++;
-        if (nextRow >= selectedWord.startRow + selectedWord.word.length) return;
-    }
-    
-    if (nextRow < currentGrid.length && nextCol < currentGrid[0].length && !currentGrid[nextRow][nextCol].isBlack) {
-        selectCell(nextRow, nextCol);
-    }
-}
-
-function moveToPrevCell(row, col) {
-    if (!selectedWord) return;
-    
-    let prevRow = row;
-    let prevCol = col;
-    
-    if (selectedWord.direction === 'across') {
-        prevCol--;
-        if (prevCol < selectedWord.startCol) return;
-    } else {
-        prevRow--;
-        if (prevRow < selectedWord.startRow) return;
-    }
-    
-    if (prevRow >= 0 && prevCol >= 0 && !currentGrid[prevRow][prevCol].isBlack) {
-        selectCell(prevRow, prevCol);
-    }
-}

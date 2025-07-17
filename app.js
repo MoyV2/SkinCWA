@@ -185,7 +185,7 @@ function createGrid() {
 }
 
 // Render grid HTML
-// REPLACE the renderGrid function with this mobile-friendly version:
+// renderGrid function with this mobile-friendly version:
 
 function renderGrid() {
     const container = document.getElementById('crossword-container');
@@ -280,46 +280,6 @@ function renderGrid() {
             const targetInput = inputs[selectedCell.row * currentGrid.length + selectedCell.col];
             if (targetInput) targetInput.focus();
         }, 100);
-    }
-}
-
-// ADD these new helper functions:
-
-function moveToNextCell(row, col) {
-    if (!selectedWord) return;
-    
-    let nextRow = row;
-    let nextCol = col;
-    
-    if (selectedWord.direction === 'across') {
-        nextCol++;
-        if (nextCol >= selectedWord.startCol + selectedWord.word.length) return;
-    } else {
-        nextRow++;
-        if (nextRow >= selectedWord.startRow + selectedWord.word.length) return;
-    }
-    
-    if (nextRow < currentGrid.length && nextCol < currentGrid[0].length && !currentGrid[nextRow][nextCol].isBlack) {
-        selectCell(nextRow, nextCol);
-    }
-}
-
-function moveToPrevCell(row, col) {
-    if (!selectedWord) return;
-    
-    let prevRow = row;
-    let prevCol = col;
-    
-    if (selectedWord.direction === 'across') {
-        prevCol--;
-        if (prevCol < selectedWord.startCol) return;
-    } else {
-        prevRow--;
-        if (prevRow < selectedWord.startRow) return;
-    }
-    
-    if (prevRow >= 0 && prevCol >= 0 && !currentGrid[prevRow][prevCol].isBlack) {
-        selectCell(prevRow, prevCol);
     }
 }
 
@@ -473,3 +433,42 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
     initMenu();
 });
+// ADD these new helper functions:
+
+function moveToNextCell(row, col) {
+    if (!selectedWord) return;
+    
+    let nextRow = row;
+    let nextCol = col;
+    
+    if (selectedWord.direction === 'across') {
+        nextCol++;
+        if (nextCol >= selectedWord.startCol + selectedWord.word.length) return;
+    } else {
+        nextRow++;
+        if (nextRow >= selectedWord.startRow + selectedWord.word.length) return;
+    }
+    
+    if (nextRow < currentGrid.length && nextCol < currentGrid[0].length && !currentGrid[nextRow][nextCol].isBlack) {
+        selectCell(nextRow, nextCol);
+    }
+}
+
+function moveToPrevCell(row, col) {
+    if (!selectedWord) return;
+    
+    let prevRow = row;
+    let prevCol = col;
+    
+    if (selectedWord.direction === 'across') {
+        prevCol--;
+        if (prevCol < selectedWord.startCol) return;
+    } else {
+        prevRow--;
+        if (prevRow < selectedWord.startRow) return;
+    }
+    
+    if (prevRow >= 0 && prevCol >= 0 && !currentGrid[prevRow][prevCol].isBlack) {
+        selectCell(prevRow, prevCol);
+    }
+}

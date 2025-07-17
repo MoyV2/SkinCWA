@@ -121,61 +121,19 @@ function generatePuzzle() {
             { word: "LUFFY", clue: "Captain of the Straw Hat Pirates" },
             { word: "ZORO", clue: "Three-sword style swordsman" },
             { word: "NAMI", clue: "Navigator who loves treasure" },
-            { word: "SANJI", clue: "Cook who fights with his legs" },
-            { word: "CHOPPER", clue: "Reindeer doctor of the crew" },
-            { word: "ROBIN", clue: "Archaeologist with flower powers" }
+            { word: "SANJI", clue: "Cook who fights with his legs" }
         ],
         'Dragon Ball Z': [
             { word: "GOKU", clue: "Saiyan protagonist" },
             { word: "VEGETA", clue: "Proud Saiyan prince" },
             { word: "GOHAN", clue: "Goku's eldest son" },
-            { word: "FRIEZA", clue: "Galactic emperor villain" },
-            { word: "CELL", clue: "Bio-android created by Dr. Gero" },
-            { word: "BULMA", clue: "Genius inventor and scientist" }
+            { word: "FRIEZA", clue: "Galactic emperor villain" }
         ],
         'Naruto': [
             { word: "NARUTO", clue: "Dreams of becoming Hokage" },
             { word: "SASUKE", clue: "Last Uchiha clan member" },
             { word: "SAKURA", clue: "Medical ninja with super strength" },
-            { word: "KAKASHI", clue: "Copy ninja sensei" },
-            { word: "ITACHI", clue: "Sasuke's older brother" },
-            { word: "HINATA", clue: "Byakugan user from Hyuga clan" }
-        ],
-        'Bleach': [
-            { word: "ICHIGO", clue: "Substitute Soul Reaper" },
-            { word: "RUKIA", clue: "Soul Reaper who gave Ichigo powers" },
-            { word: "URYU", clue: "Quincy archer and classmate" },
-            { word: "ORIHIME", clue: "Healer with rejection powers" }
-        ],
-        'Jujutsu Kaisen': [
-            { word: "YUJI", clue: "Pink-haired protagonist vessel" },
-            { word: "MEGUMI", clue: "Ten Shadows technique user" },
-            { word: "NOBARA", clue: "Hammer and nails technique user" },
-            { word: "GOJO", clue: "Strongest sorcerer with Six Eyes" }
-        ],
-        'Pokemon': [
-            { word: "PIKACHU", clue: "Electric mouse Pokemon" },
-            { word: "CHARIZARD", clue: "Fire/Flying dragon-like Pokemon" },
-            { word: "BLASTOISE", clue: "Water turtle with cannons" },
-            { word: "VENUSAUR", clue: "Grass/Poison Pokemon with flower" }
-        ],
-        'Demon Slayer': [
-            { word: "TANJIRO", clue: "Water breathing demon slayer" },
-            { word: "NEZUKO", clue: "Demon sister in bamboo muzzle" },
-            { word: "ZENITSU", clue: "Thunder breathing yellow-haired slayer" },
-            { word: "INOSUKE", clue: "Beast breathing boar-headed slayer" }
-        ],
-        'My Hero Academia': [
-            { word: "DEKU", clue: "Green-haired One For All user" },
-            { word: "BAKUGO", clue: "Explosion quirk user" },
-            { word: "TODOROKI", clue: "Half-hot half-cold quirk user" },
-            { word: "ALLMIGHT", clue: "Symbol of Peace, former One For All user" }
-        ],
-        'Solo Leveling': [
-            { word: "JINWOO", clue: "Shadow Monarch and weakest hunter" },
-            { word: "IGRIS", clue: "Red shadow knight" },
-            { word: "BERU", clue: "Ant shadow soldier" },
-            { word: "HUNTER", clue: "Person who fights monsters" }
+            { word: "KAKASHI", clue: "Copy ninja sensei" }
         ]
     };
     
@@ -227,24 +185,75 @@ function createGrid() {
     renderClues();
 }
 
-// MOBILE-OPTIMIZED Render grid HTML
+// COMPLETELY NEW MOBILE-FIRST APPROACH
 function renderGrid() {
     const container = document.getElementById('crossword-container');
+    container.innerHTML = '';
+    
+    // Create main grid
     const grid = document.createElement('div');
     grid.className = 'crossword-grid';
     grid.style.gridTemplateColumns = `repeat(${currentGrid.length}, 1fr)`;
     
+    // Add single hidden input for mobile keyboard
+    const hiddenInput = document.createElement('input');
+    hiddenInput.id = 'mobile-input';
+    hiddenInput.type = 'text';
+    hiddenInput.style.cssText = `
+        position: fixed;
+        top: -1000px;
+        left: -1000px;
+        opacity: 0;
+        pointer-events: none;
+    `;
+    hiddenInput.maxLength = 1;
+    hiddenInput.autocomplete = 'off';
+    hiddenInput.autocorrect = 'off';
+    hiddenInput.autocapitalize = 'characters';
+    hiddenInput.spellcheck = false;
+    
+    // Handle typing from hidden input
+    hiddenInput.addEventListener('input', (e) => {
+        if (!selectedCell) return;
+        
+        const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+        const { row, col } = selectedCell;
+        
+        currentGrid[row][col].userInput = value;
+        e.target.value = '';
+        
+        updateCellDisplay(row, col);
+        
+        if (value) {
+            moveToNextCell(row, col);
+        }
+    });
+    
+    hiddenInput.addEventListener('keydown', (e) => {
+        if (!selectedCell) return;
+        
+        if (e.key === 'Backspace') {
+            const { row, col } = selectedCell;
+            if (!currentGrid[row][col].userInput) {
+                moveToPrevCell(row, col);
+            } else {
+                currentGrid[row][col].userInput = '';
+                updateCellDisplay(row, col);
+            }
+        }
+    });
+    
+    container.appendChild(hiddenInput);
+    
+    // Create cells
     currentGrid.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
             const cellDiv = document.createElement('div');
             cellDiv.className = `cell ${cell.isBlack ? 'black' : ''}`;
-            
-            // Add selection highlighting
-            if (selectedCell && selectedCell.row === rowIndex && selectedCell.col === colIndex) {
-                cellDiv.classList.add('selected');
-            }
+            cellDiv.id = `cell-${rowIndex}-${colIndex}`;
             
             if (!cell.isBlack) {
+                // Add number
                 if (cell.number > 0) {
                     const number = document.createElement('span');
                     number.className = 'cell-number';
@@ -252,164 +261,81 @@ function renderGrid() {
                     cellDiv.appendChild(number);
                 }
                 
-                // AGGRESSIVE MOBILE FIX: Multiple input methods
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.inputMode = 'text'; // Mobile hint
-                input.autocomplete = 'off';
-                input.autocorrect = 'off';
-                input.autocapitalize = 'characters';
-                input.spellcheck = false;
-                input.maxLength = 1;
-                input.value = cell.userInput || '';
-                
-                // More aggressive styling
-                input.style.cssText = `
-                    position: absolute !important;
-                    top: 0 !important;
-                    left: 0 !important;
-                    width: 100% !important;
-                    height: 100% !important;
-                    background: transparent !important;
-                    border: none !important;
-                    outline: none !important;
-                    text-align: center !important;
-                    font-size: 16px !important;
-                    font-weight: bold !important;
-                    color: black !important;
-                    z-index: 10 !important;
-                    -webkit-appearance: none !important;
-                    -webkit-user-select: text !important;
-                    -webkit-touch-callout: none !important;
-                    -webkit-tap-highlight-color: transparent !important;
-                    border-radius: 0 !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    opacity: 1 !important;
-                    pointer-events: auto !important;
-                `;
-                
-                // Store cell coordinates on input
-                input.dataset.row = rowIndex;
-                input.dataset.col = colIndex;
-                
-                // Handle input changes
-                input.addEventListener('input', (e) => {
-                    e.stopPropagation();
-                    const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
-                    const row = parseInt(e.target.dataset.row);
-                    const col = parseInt(e.target.dataset.col);
-                    
-                    currentGrid[row][col].userInput = value;
-                    e.target.value = value;
-                    
-                    if (value) {
-                        moveToNextCell(row, col);
-                    }
-                });
-                
-                // Handle all key events
-                input.addEventListener('keydown', (e) => {
-                    e.stopPropagation();
-                    const row = parseInt(e.target.dataset.row);
-                    const col = parseInt(e.target.dataset.col);
-                    
-                    if (e.key === 'Backspace') {
-                        if (!e.target.value) {
-                            moveToPrevCell(row, col);
-                        }
-                    }
-                });
-                
-                // CRITICAL: Multiple focus handlers for different mobile browsers
-                const focusInput = () => {
-                    selectCell(rowIndex, colIndex);
-                    
-                    // Force focus with multiple attempts
-                    setTimeout(() => {
-                        input.focus();
-                        input.click();
-                    }, 10);
-                    
-                    setTimeout(() => {
-                        input.focus();
-                    }, 50);
-                    
-                    setTimeout(() => {
-                        input.focus();
-                    }, 100);
-                };
-                
-                // Multiple event listeners for different devices
-                input.addEventListener('focus', focusInput);
-                input.addEventListener('touchstart', (e) => {
-                    e.stopPropagation();
-                    focusInput();
-                }, { passive: false });
-                
-                cellDiv.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    focusInput();
-                });
-                
-                cellDiv.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    focusInput();
-                }, { passive: false });
-                
-                // Add invisible text content for screen readers
-                const textContent = document.createElement('div');
-                textContent.style.cssText = `
+                // Add letter display
+                const letterDiv = document.createElement('div');
+                letterDiv.className = 'cell-letter';
+                letterDiv.style.cssText = `
                     position: absolute;
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
-                    pointer-events: none;
-                    z-index: 1;
                     font-size: 16px;
                     font-weight: bold;
-                    color: ${cell.isCorrect ? 'green' : (cell.userInput && !cell.isCorrect ? 'red' : 'black')};
+                    pointer-events: none;
                 `;
-                textContent.textContent = cell.userInput || '';
+                letterDiv.textContent = cell.userInput || '';
+                cellDiv.appendChild(letterDiv);
                 
-                cellDiv.appendChild(textContent);
-                cellDiv.appendChild(input);
+                // Click handler
+                cellDiv.addEventListener('click', () => {
+                    selectCell(rowIndex, colIndex);
+                    focusMobileInput();
+                });
+                
+                // Touch handler for mobile
+                cellDiv.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    selectCell(rowIndex, colIndex);
+                    focusMobileInput();
+                });
             }
             
             grid.appendChild(cellDiv);
         });
     });
     
-    container.innerHTML = '';
     container.appendChild(grid);
-    
-    // Auto-focus selected cell with aggressive retry
-    if (selectedCell) {
-        const focusSelected = () => {
-            const inputs = container.querySelectorAll('input');
-            const targetInput = inputs[selectedCell.row * currentGrid.length + selectedCell.col];
-            if (targetInput) {
-                targetInput.focus();
-                targetInput.click();
-                
-                // Try to trigger mobile keyboard
-                const event = new Event('touchstart', { bubbles: true });
-                targetInput.dispatchEvent(event);
-            }
-        };
+}
+
+// Focus the hidden input to trigger mobile keyboard
+function focusMobileInput() {
+    const input = document.getElementById('mobile-input');
+    if (input) {
+        // Multiple attempts to focus
+        setTimeout(() => input.focus(), 10);
+        setTimeout(() => input.focus(), 50);
+        setTimeout(() => input.focus(), 100);
         
-        setTimeout(focusSelected, 50);
-        setTimeout(focusSelected, 150);
-        setTimeout(focusSelected, 300);
+        // Force click for iOS
+        setTimeout(() => input.click(), 20);
     }
 }
-// Select cell
+
+// Update cell display
+function updateCellDisplay(row, col) {
+    const cellDiv = document.getElementById(`cell-${row}-${col}`);
+    const letterDiv = cellDiv.querySelector('.cell-letter');
+    if (letterDiv) {
+        letterDiv.textContent = currentGrid[row][col].userInput || '';
+    }
+}
+
+// Select cell with visual feedback
 function selectCell(row, col) {
     if (currentGrid[row][col].isBlack) return;
     
+    // Remove previous selection
+    document.querySelectorAll('.cell').forEach(cell => {
+        cell.classList.remove('selected');
+    });
+    
     selectedCell = { row, col };
+    
+    // Add selection to current cell
+    const cellDiv = document.getElementById(`cell-${row}-${col}`);
+    if (cellDiv) {
+        cellDiv.classList.add('selected');
+    }
     
     // Find word containing this cell
     selectedWord = currentPuzzle.words.find(w => {
@@ -419,8 +345,6 @@ function selectCell(row, col) {
             return w.startCol === col && row >= w.startRow && row < w.startRow + w.word.length;
         }
     });
-    
-    renderGrid(); // Re-render to show selection
 }
 
 // Move to next cell
@@ -440,6 +364,7 @@ function moveToNextCell(row, col) {
     
     if (nextRow < currentGrid.length && nextCol < currentGrid[0].length && !currentGrid[nextRow][nextCol].isBlack) {
         selectCell(nextRow, nextCol);
+        focusMobileInput();
     }
 }
 
@@ -460,6 +385,7 @@ function moveToPrevCell(row, col) {
     
     if (prevRow >= 0 && prevCol >= 0 && !currentGrid[prevRow][prevCol].isBlack) {
         selectCell(prevRow, prevCol);
+        focusMobileInput();
     }
 }
 
@@ -492,6 +418,7 @@ function selectWordFromClue(direction, number) {
     const word = currentPuzzle.words.find(w => w.direction === direction && w.number === number);
     if (word) {
         selectCell(word.startRow, word.startCol);
+        focusMobileInput();
     }
 }
 
@@ -527,7 +454,18 @@ function checkAnswers() {
         completePuzzle();
     }
     
-    renderGrid();
+    // Update display colors
+    for (let row = 0; row < currentGrid.length; row++) {
+        for (let col = 0; col < currentGrid[row].length; col++) {
+            if (!currentGrid[row][col].isBlack) {
+                const letterDiv = document.querySelector(`#cell-${row}-${col} .cell-letter`);
+                if (letterDiv) {
+                    const cell = currentGrid[row][col];
+                    letterDiv.style.color = cell.isCorrect ? 'green' : (cell.userInput && !cell.isCorrect ? 'red' : 'black');
+                }
+            }
+        }
+    }
 }
 
 // Complete puzzle
@@ -536,7 +474,6 @@ function completePuzzle() {
     const puzzlesNeeded = getPuzzlesNeededForLevel(currentLevel);
     
     if (puzzlesCompleted >= puzzlesNeeded && currentLevel < 50) {
-        // Level up!
         currentLevel++;
         categoryProgress[selectedCategory] = {
             level: currentLevel,
@@ -546,7 +483,6 @@ function completePuzzle() {
         saveProgress();
         showLevelUp();
     } else {
-        // Just completed a puzzle
         categoryProgress[selectedCategory].puzzlesCompleted = puzzlesCompleted;
         saveProgress();
         setTimeout(() => generatePuzzle(), 1000);
@@ -573,10 +509,10 @@ function revealAnswers() {
             if (!currentGrid[row][col].isBlack) {
                 currentGrid[row][col].userInput = currentGrid[row][col].letter;
                 currentGrid[row][col].isCorrect = true;
+                updateCellDisplay(row, col);
             }
         }
     }
-    renderGrid();
 }
 
 // Back to menu

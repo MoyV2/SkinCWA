@@ -227,7 +227,7 @@ function createGrid() {
     renderClues();
 }
 
-// MOBILE-FRIENDLY Render grid HTML
+// MOBILE-OPTIMIZED Render grid HTML
 function renderGrid() {
     const container = document.getElementById('crossword-container');
     const grid = document.createElement('div');
@@ -252,58 +252,130 @@ function renderGrid() {
                     cellDiv.appendChild(number);
                 }
                 
-                // MOBILE FIX: Add input for mobile keyboards
+                // AGGRESSIVE MOBILE FIX: Multiple input methods
                 const input = document.createElement('input');
                 input.type = 'text';
+                input.inputMode = 'text'; // Mobile hint
+                input.autocomplete = 'off';
+                input.autocorrect = 'off';
+                input.autocapitalize = 'characters';
+                input.spellcheck = false;
                 input.maxLength = 1;
                 input.value = cell.userInput || '';
+                
+                // More aggressive styling
                 input.style.cssText = `
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: transparent;
-                    border: none;
-                    outline: none;
-                    text-align: center;
-                    font-size: 18px;
-                    font-weight: bold;
-                    color: ${cell.isCorrect ? 'green' : (cell.userInput && !cell.isCorrect ? 'red' : 'black')};
-                    z-index: 2;
-                    -webkit-appearance: none;
-                    -moz-appearance: none;
-                    appearance: none;
+                    position: absolute !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    background: transparent !important;
+                    border: none !important;
+                    outline: none !important;
+                    text-align: center !important;
+                    font-size: 16px !important;
+                    font-weight: bold !important;
+                    color: black !important;
+                    z-index: 10 !important;
+                    -webkit-appearance: none !important;
+                    -webkit-user-select: text !important;
+                    -webkit-touch-callout: none !important;
+                    -webkit-tap-highlight-color: transparent !important;
+                    border-radius: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    opacity: 1 !important;
+                    pointer-events: auto !important;
                 `;
+                
+                // Store cell coordinates on input
+                input.dataset.row = rowIndex;
+                input.dataset.col = colIndex;
                 
                 // Handle input changes
                 input.addEventListener('input', (e) => {
+                    e.stopPropagation();
                     const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
-                    currentGrid[rowIndex][colIndex].userInput = value;
+                    const row = parseInt(e.target.dataset.row);
+                    const col = parseInt(e.target.dataset.col);
+                    
+                    currentGrid[row][col].userInput = value;
                     e.target.value = value;
                     
                     if (value) {
-                        moveToNextCell(rowIndex, colIndex);
+                        moveToNextCell(row, col);
                     }
                 });
                 
-                // Handle backspace
+                // Handle all key events
                 input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Backspace' && !input.value) {
-                        moveToPrevCell(rowIndex, colIndex);
+                    e.stopPropagation();
+                    const row = parseInt(e.target.dataset.row);
+                    const col = parseInt(e.target.dataset.col);
+                    
+                    if (e.key === 'Backspace') {
+                        if (!e.target.value) {
+                            moveToPrevCell(row, col);
+                        }
                     }
                 });
                 
-                // Handle focus
-                input.addEventListener('focus', () => {
+                // CRITICAL: Multiple focus handlers for different mobile browsers
+                const focusInput = () => {
                     selectCell(rowIndex, colIndex);
+                    
+                    // Force focus with multiple attempts
+                    setTimeout(() => {
+                        input.focus();
+                        input.click();
+                    }, 10);
+                    
+                    setTimeout(() => {
+                        input.focus();
+                    }, 50);
+                    
+                    setTimeout(() => {
+                        input.focus();
+                    }, 100);
+                };
+                
+                // Multiple event listeners for different devices
+                input.addEventListener('focus', focusInput);
+                input.addEventListener('touchstart', (e) => {
+                    e.stopPropagation();
+                    focusInput();
+                }, { passive: false });
+                
+                cellDiv.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    focusInput();
                 });
                 
+                cellDiv.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    focusInput();
+                }, { passive: false });
+                
+                // Add invisible text content for screen readers
+                const textContent = document.createElement('div');
+                textContent.style.cssText = `
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    pointer-events: none;
+                    z-index: 1;
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: ${cell.isCorrect ? 'green' : (cell.userInput && !cell.isCorrect ? 'red' : 'black')};
+                `;
+                textContent.textContent = cell.userInput || '';
+                
+                cellDiv.appendChild(textContent);
                 cellDiv.appendChild(input);
-                cellDiv.onclick = () => {
-                    selectCell(rowIndex, colIndex);
-                    setTimeout(() => input.focus(), 50);
-                };
             }
             
             grid.appendChild(cellDiv);
@@ -313,16 +385,26 @@ function renderGrid() {
     container.innerHTML = '';
     container.appendChild(grid);
     
-    // Auto-focus selected cell input
+    // Auto-focus selected cell with aggressive retry
     if (selectedCell) {
-        setTimeout(() => {
+        const focusSelected = () => {
             const inputs = container.querySelectorAll('input');
             const targetInput = inputs[selectedCell.row * currentGrid.length + selectedCell.col];
-            if (targetInput) targetInput.focus();
-        }, 100);
+            if (targetInput) {
+                targetInput.focus();
+                targetInput.click();
+                
+                // Try to trigger mobile keyboard
+                const event = new Event('touchstart', { bubbles: true });
+                targetInput.dispatchEvent(event);
+            }
+        };
+        
+        setTimeout(focusSelected, 50);
+        setTimeout(focusSelected, 150);
+        setTimeout(focusSelected, 300);
     }
 }
-
 // Select cell
 function selectCell(row, col) {
     if (currentGrid[row][col].isBlack) return;
